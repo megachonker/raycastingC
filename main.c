@@ -104,9 +104,9 @@ Point intersect(Segment A, Segment B){
         return null;
     }
 
-    // if (t > 1 || t < 0){
-    //     return null;
-    // }
+    if (-t > 1 || -t < 0){
+        return null;
+    }
 
     printf("s=%f\nt=%f",s,t);
 
@@ -152,6 +152,8 @@ void scan(Eye lanceur, Segment object){
     //     // UwU_render(); 
     // }
 }
+
+
 
 int main(void) {
 
