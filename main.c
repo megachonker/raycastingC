@@ -6,7 +6,6 @@
 #include <time.h>
 #include <stdlib.h>
 
-
 typedef struct Point {
     float x, y;
 }Point;
