@@ -11,3 +11,8 @@ clean:
 	rm main
 run: compile exec clean
 	echo finish	...
+compilewarning:
+	echo "compWARN	..."
+	gcc	main.c -o main -g $(LDLIBS) -Wall -Wextra
+debug: compilewarning exec clean
+	echo finishW...
