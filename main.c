@@ -17,7 +17,7 @@ typedef struct Segment {
 }Segment;
 
 typedef struct Eye {
-    Point center;
+    Point centre;
     float range;
     float precision;
 }Eye;
@@ -66,8 +66,23 @@ Point padd(Point A, Point B){
     return out;
 }
 
+bool pcompegal(Point A, Point B){
+    if(A.x == B.x && A.y == B.y){
+        return true;
+    }
+    return false;
+}
+
+
+
 void placeSegment(Segment mure){
     UwU_drawLine(mure.A.x,mure.A.y,mure.B.x,mure.B.y);
+}
+
+void placeListeSegment(Segment *liste,int taille){
+    for(int u =0 ; u < taille; u++){
+        placeSegment(liste[u]);
+    }
 }
 
 float norme(Point A, Point B){
@@ -75,7 +90,7 @@ float norme(Point A, Point B){
 }
 
 Point intersect(Segment A, Segment B){
-    printf("\n++++++++++++++\nx1=%f,y1=%f\nx2=%f,y2=%f\nx3=%f,y3=%f\nx4=%f,y4=%f\n",A.A.x,A.A.y,A.B.x,A.B.y,B.A.x,B.A.y,B.B.x,B.B.y);
+    // printf("\n++++++++++++++\nx1=%f,y1=%f\nx2=%f,y2=%f\nx3=%f,y3=%f\nx4=%f,y4=%f\n",A.A.x,A.A.y,A.B.x,A.B.y,B.A.x,B.A.y,B.B.x,B.B.y);
     //utiliser les multiplication est soustraction de point dirrectemetn
 
     float s1=A.B.x-A.A.x;
@@ -108,7 +123,7 @@ Point intersect(Segment A, Segment B){
         return null;
     }
 
-    printf("s=%f\nt=%f",s,t);
+    // printf("s=%f\nt=%f",s,t);
 
     float x = A.A.x+s*(A.B.x-A.A.x);
     float y = A.A.y+s*(A.B.y-A.A.y);
@@ -117,72 +132,85 @@ Point intersect(Segment A, Segment B){
     return rep;
 }
 
-void scan(Eye lanceur, Segment object){
+void scan(Eye lanceur, Segment *object,int taille){
 
+    for(float i =0;i<2*3.14159265359;i+=lanceur.precision){
+        //calcule les coordoner des point pour le cercle
+        Point pCercleExterieur = {lanceur.centre.x+lanceur.range*cos(i)
+                                , lanceur.centre.y+lanceur.range*sin(i)};
 
-    Point fc = psum(object.B,object.A);
-    
+        Segment rayon = {pCercleExterieur,lanceur.centre};
+        
 
-    ptstest(object.B,'v');
-    for(float var = 0; var < 40; var+=0.1){
-        Point coef = {var , var}; 
-        ptstest(pscal(coef,fc),'r');
-        ptstest(psum(pscal(fc,coef),object.A),'b');
+        //lol on testera tout les objet le la map LA FAMEUSE OPTIMISATION
+        for(int u = 0; u<taille;u++){
+            Point touche = intersect(rayon,object[u]);
+            //wtf ces censer etre l'inverse ...
+            if( touche.x != 0 && touche.y != 0 ){
+                //on verifie que lobjet qui a toucher est bien plus proche que le precedant 
+                    rayon.A = touche;   //si oui allor le pron rayon lancer sera plus cour ect 
+            }
+        }
+        //on verifie si le rayon a toucher un truc au final
+        if(!pcompegal(rayon.A,pCercleExterieur)){
+            ptstest(rayon.A,'r');//si oui alor on fait le boom
+        }
+
+        placeSegment(rayon);
+        UwU_render(); 
+        UwU_wait(5);
     }
-    UwU_render();
-    UwU_wait(100);
-    // for(float i =0;i<2*3.14159265359;i+=lanceur.precision){
-    //     //calcule les coordoner des point pour le cercle
-    //     Point pCercleExterieur = {lanceur.center.x+lanceur.range*cos(i)
-    //                             , lanceur.center.y+lanceur.range*sin(i)};
-
-
-    //     // Point truc = psum(pCercleExterieur,fc);
-    //     // ptstest(fc,'r');
-    //     // if(pCercleExterieur.y>object.A.y && pCercleExterieur.x<object.A.x){
-    //     //                     // CENTRE              
-    //     //     Segment ligne = {lanceur.center , {0,0}};// pCercleExterieur.x,object.A.y}
-    //     //     placeSegment(ligne);
-    //     // }else{
-    //     //     Segment ligne = {lanceur.center , pCercleExterieur};
-    //     //     placeSegment(ligne);        
-    //     // }
-
-    //     UwU_wait(200);
-    //     // UwU_render(); 
-    // }
 }
 
 
+void benchmark(){
+    Segment test = {{rand()%600,rand()%600},{rand()%600,rand()%600}};
+    Segment test2 = {{rand()%600,rand()%600},{rand()%600,rand()%600}};
+    if(intersect(test,test2).x != 0 && intersect(test,test2).y !=0){
+        UwU_background(255,255,255);
+        ptstest(intersect(test,test2),'v');
+    }else{
+        UwU_background(200,150,255);
+        ptstest(intersect(test,test2),'r');
+
+    }
+    placeSegment(test);
+    placeSegment(test2);
+    UwU_render();
+}
+
+void initrandomlisteobject(Segment *trairandom, int taille){
+    for(int i=0; i<taille;i++){
+        Segment monsegement ={{rand()%800,rand()%600},{rand()%800,rand()%600}};
+        trairandom[i] = monsegement;
+    }
+}
 
 int main(void) {
+    static int nombreDeMure=5;
 
     srand(time(NULL));
-    int r = rand(); 
-
     UwU_createWindow("Fenètre1", 800, 600);
 
-    Eye centre = {{400,300}, 200, 0.02};
-
-    // int x = (test.B.y - test.A.y)/(test.A.x-test.B.x);
-    // int y = (test.A.x*test.B.y-test.B.x*test.A.y)/(test.A.y-test.B.y);
+    Eye millieux = {{400,300}, 300, 0.02};
     // printf("%d,%d",x,y);
     while(UwU_isRunning()) {
-        Segment test = {rand()%600,rand()%600,rand()%600,rand()%600};
-        Segment test2 = {rand()%600,rand()%600,rand()%600,rand()%600};
         UwU_background(255,255,255);
         UwU_setColor(0,0,0);
 
-        if(intersect(test,test2).x != 0 && intersect(test,test2).y !=0){
-            ptstest(intersect(test,test2),'v');
-        }else{
-            ptstest(intersect(test,test2),'r');
-            UwU_background(200,150,255);
-        }
-        placeSegment(test);
-        placeSegment(test2);
+        //on genere des "mure" random
+        Segment trairandom[nombreDeMure];
+        initrandomlisteobject(trairandom,nombreDeMure);
+
+
+        //on place une liste de segement pour l'affichage
+        placeListeSegment(trairandom,nombreDeMure);
+
+        scan(millieux,trairandom,nombreDeMure);
+ 
+        
         UwU_render();
-        UwU_wait(500);
+        UwU_wait(300);
         // scan(centre,test);
     }
     UwU_closeWindow();
