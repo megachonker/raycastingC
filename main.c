@@ -6,6 +6,8 @@
 #include <time.h>
 #include <stdlib.h>
 
+#define PI 3.14159265359
+
 typedef struct Point {
     float x, y;
 }Point;
@@ -16,6 +18,8 @@ typedef struct Segment {
 
 typedef struct Eye {
     Point centre;
+    float fov;
+    float dirrection;
     float range;
     float precision;
 }Eye;
@@ -47,6 +51,10 @@ void ptstest(Point point, char c){
     color(c);
     UwU_fillEllipse(point.x,point.y,10,10);
     rstcolor();
+}
+
+void printsegment(Segment monsegemnet){
+    printf("\n============\nax=%f\nay=%f\nbx=%f\nby=%f\n",monsegemnet.A.x,monsegemnet.A.y,monsegemnet.B.x,monsegemnet.B.y);
 }
 
 Point pscal(Point A,Point B){
@@ -85,6 +93,10 @@ void placeListeSegment(Segment *liste,int taille){
 
 float norme(Point A, Point B){
     return sqrt(pow(B.x-A.x,2)+pow(B.y-A.y,2));
+}
+
+float normevecteur(Segment A){
+    return norme(A.A,A.B);
 }
 
 Point intersect(Segment A, Segment B){
@@ -130,9 +142,19 @@ Point intersect(Segment A, Segment B){
     return rep;
 }
 
-void scan(Eye lanceur, Segment *object,int taille){
+void colone(float chift,float longeur,float proportion){
+    proportion=proportion;
+    longeur=((300/longeur)-1)*40;
+    int ofset = 300;
+    Segment lignepixelvertical = {chift*4000,ofset-longeur,chift*4000,longeur+ofset};
+    printsegment(lignepixelvertical);
+    placeSegment(lignepixelvertical);
 
-    for(float i =0;i<2*3.14159265359;i+=lanceur.precision){
+}
+
+void scan(Eye lanceur, Segment *object,int taille){
+    float angle=2*PI*lanceur.fov/360;
+    for(float i = 2*PI*lanceur.dirrection/360;i<angle;i+=lanceur.precision){
         //calcule les coordoner des point pour le cercle
         Point pCercleExterieur = {lanceur.centre.x+lanceur.range*cos(i)
                                 , lanceur.centre.y+lanceur.range*sin(i)};
@@ -153,10 +175,11 @@ void scan(Eye lanceur, Segment *object,int taille){
         if(!pcompegal(rayon.A,pCercleExterieur)){
             ptstest(rayon.A,'r');//si oui alor on fait le boom
         }
-
+        
+        colone(i*lanceur.precision, normevecteur(rayon),lanceur.precision);
         placeSegment(rayon);
         UwU_render(); 
-        UwU_wait(5);
+        UwU_wait(15);
     }
 }
 
@@ -189,8 +212,8 @@ int main(void) {
 
     srand(time(NULL));
     UwU_createWindow("Fenètre1", 800, 600);
-
-    Eye millieux = {{400,300}, 300, 0.02};
+    //calculler la base est rotation autre sens
+    Eye millieux = {{400,300},310,220, 300, 0.02};
     // printf("%d,%d",x,y);
     while(UwU_isRunning()) {
         UwU_background(255,255,255);
