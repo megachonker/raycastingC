@@ -8,12 +8,25 @@
 
 #define PI 3.14159265359
 
+#define X 800
+
 typedef struct Point {
     float x, y;
 }Point;
 
+
+//type color
+
+typedef struct Texture {
+    //Color color
+    int nbhitx;//index du numero de colone // peut etre passer
+    int nbhity;//intex de la hauteur //peut etre déduit 
+}Texture;
+
 typedef struct Segment {
     Point A,B;
+    char color;
+    //Texture
 }Segment;
 
 typedef struct Eye {
@@ -54,7 +67,7 @@ void ptstest(Point point, char c){
 }
 
 void printsegment(Segment monsegemnet){
-    printf("\n============\nax=%f\nay=%f\nbx=%f\nby=%f\n",monsegemnet.A.x,monsegemnet.A.y,monsegemnet.B.x,monsegemnet.B.y);
+    //printf("\n============\nax=%f\nay=%f\nbx=%f\nby=%f\n",monsegemnet.A.x,monsegemnet.A.y,monsegemnet.B.x,monsegemnet.B.y);
 }
 
 Point pscal(Point A,Point B){
@@ -142,19 +155,20 @@ Point intersect(Segment A, Segment B){
     return rep;
 }
 
-void colone(float chift,float longeur,float proportion){
-    proportion=proportion;
-    longeur=((300/longeur)-1)*40;
+void colone(float largeur,float longeur,int distancerandu){
+    longeur=((distancerandu/longeur)-1)*40;
     int ofset = 300;
-    Segment lignepixelvertical = {chift*4000,ofset-longeur,chift*4000,longeur+ofset};
-    printsegment(lignepixelvertical);
+    Segment lignepixelvertical = {largeur,ofset-longeur,largeur,longeur+ofset};
+    //printsegment(lignepixelvertical);
     placeSegment(lignepixelvertical);
 
 }
 
 void scan(Eye lanceur, Segment *object,int taille){
-    float angle=2*PI*lanceur.fov/360;
-    for(float i = 2*PI*lanceur.dirrection/360;i<angle;i+=lanceur.precision){
+    float angledepar=2*PI*(lanceur.dirrection-lanceur.fov/2)/360;
+    float anglearriver = 2*PI*(lanceur.dirrection+lanceur.fov/2)/360;
+    // printf("anglearriver %f \nangledepar %f",anglearriver,angledepar);
+    for(float i = angledepar;i<anglearriver;i+=lanceur.precision){
         //calcule les coordoner des point pour le cercle
         Point pCercleExterieur = {lanceur.centre.x+lanceur.range*cos(i)
                                 , lanceur.centre.y+lanceur.range*sin(i)};
@@ -168,15 +182,21 @@ void scan(Eye lanceur, Segment *object,int taille){
             //wtf ces censer etre l'inverse ...
             if( touche.x != 0 && touche.y != 0 ){
                 //on verifie que lobjet qui a toucher est bien plus proche que le precedant 
-                    rayon.A = touche;   //si oui allor le pron rayon lancer sera plus cour ect 
+                    rayon.A = touche;   //si oui allor le pron rayon lancer sera plus cour ect
+                    // rayon.A
             }
         }
         //on verifie si le rayon a toucher un truc au final
         if(!pcompegal(rayon.A,pCercleExterieur)){
             ptstest(rayon.A,'r');//si oui alor on fait le boom
         }
-        
-        colone(i*lanceur.precision, normevecteur(rayon),lanceur.precision);
+        // on met a 0 en enlever l'angle et on fait la proportion des pixel
+        float base = (i-angledepar)/(lanceur.precision); 
+        //on fait en sorte que tout l'écrant est utiliser pour afficher
+        float coef = (X/(-anglearriver/lanceur.precision));
+        float total = base * coef /2; //jsp le 2
+        // printf("====\nvaleur base:%f\ncoef%f\ntotal %f\n",base,coef,total);
+        colone(total, normevecteur(rayon),lanceur.range);
         placeSegment(rayon);
         UwU_render(); 
         UwU_wait(15);
@@ -202,7 +222,7 @@ void benchmark(){
 
 void initrandomlisteobject(Segment *trairandom, int taille){
     for(int i=0; i<taille;i++){
-        Segment monsegement ={{rand()%800,rand()%600},{rand()%800,rand()%600}};
+        Segment monsegement ={{rand()%800,rand()%600},{rand()%800,rand()%600},'b'};
         trairandom[i] = monsegement;
     }
 }
@@ -211,9 +231,9 @@ int main(void) {
     static int nombreDeMure=5;
 
     srand(time(NULL));
-    UwU_createWindow("Fenètre1", 800, 600);
+    UwU_createWindow("Fenètre1", X, 600);
     //calculler la base est rotation autre sens
-    Eye millieux = {{400,300},310,220, 300, 0.02};
+    Eye millieux = {{400,300},90,-90, 700, 0.01};
     // printf("%d,%d",x,y);
     while(UwU_isRunning()) {
         UwU_background(255,255,255);
@@ -231,7 +251,7 @@ int main(void) {
  
         
         UwU_render();
-        UwU_wait(300);
+        UwU_wait(1000);
         // scan(centre,test);
     }
     UwU_closeWindow();
