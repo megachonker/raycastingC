@@ -8,7 +8,8 @@
 
 #define PI 3.14159265359
 
-#define X 800
+#define X 1920
+#define Y 1080
 
 typedef struct Point {
     float x, y;
@@ -42,6 +43,27 @@ void rstcolor(){
     UwU_setColor(0,0,0);  
 }
 
+char intocolorchar(int value){
+    switch (value)
+    {
+    case 0:
+        return 'r';
+        break;
+    case 1:
+        return 'v';
+        break;
+    case 2:
+        return 'b';
+        break;
+    case 3:
+        return 'n';
+        break;
+    default:
+        return 'r';
+        break;
+    }
+}
+
 void color(char c){
     switch (c)
     {
@@ -53,6 +75,12 @@ void color(char c){
         break;
     case 'b':
         UwU_setColor(0,0,255);
+        break;
+    case 'n':
+        UwU_setColor(0,0,0);
+        break;
+    case 'w':
+        UwU_setColor(255,255,255);
         break;
     default:
         UwU_setColor(0,0,0);
@@ -92,10 +120,10 @@ bool pcompegal(Point A, Point B){
     return false;
 }
 
-
-
 void placeSegment(Segment mure){
+    color(mure.color);
     UwU_drawLine(mure.A.x,mure.A.y,mure.B.x,mure.B.y);
+    rstcolor();   
 }
 
 void placeListeSegment(Segment *liste,int taille){
@@ -155,18 +183,19 @@ Point intersect(Segment A, Segment B){
     return rep;
 }
 
-void colone(float largeur,float longeur,int distancerandu){
+void colone(float largeur,float longeur,int distancerandu,char couleur){
     longeur=((distancerandu/longeur)-1)*40;
-    int ofset = 300;
-    Segment lignepixelvertical = {largeur,ofset-longeur,largeur,longeur+ofset};
+    int ofset = Y/2;
+    Segment lignepixelvertical = {largeur,ofset-longeur,largeur,longeur+ofset,couleur};
     //printsegment(lignepixelvertical);
     placeSegment(lignepixelvertical);
 
 }
 
-void scan(Eye lanceur, Segment *object,int taille){
-    float angledepar=2*PI*(lanceur.dirrection-lanceur.fov/2)/360;
-    float anglearriver = 2*PI*(lanceur.dirrection+lanceur.fov/2)/360;
+int scan(Eye lanceur, Segment *object,int taille){
+    int exitcode = 0;
+    float angledepar    = 2*PI*(lanceur.dirrection-lanceur.fov/2)/360;
+    float anglearriver  = 2*PI*(lanceur.dirrection+lanceur.fov/2)/360;
     // printf("anglearriver %f \nangledepar %f",anglearriver,angledepar);
     for(float i = angledepar;i<anglearriver;i+=lanceur.precision){
         //calcule les coordoner des point pour le cercle
@@ -183,30 +212,34 @@ void scan(Eye lanceur, Segment *object,int taille){
             if( touche.x != 0 && touche.y != 0 ){
                 //on verifie que lobjet qui a toucher est bien plus proche que le precedant 
                     rayon.A = touche;   //si oui allor le pron rayon lancer sera plus cour ect
-                    // rayon.A
+                    rayon.color=object[u].color;
             }
         }
         //on verifie si le rayon a toucher un truc au final
-        if(!pcompegal(rayon.A,pCercleExterieur)){
-            ptstest(rayon.A,'r');//si oui alor on fait le boom
-        }
+        // if(!pcompegal(rayon.A,pCercleExterieur)){
+        //     ptstest(rayon.A,'r');//si oui alor on fait le boom
+        // }
         // on met a 0 en enlever l'angle et on fait la proportion des pixel
         float base = (i-angledepar)/(lanceur.precision); 
-        //on fait en sorte que tout l'écrant est utiliser pour afficher
-        float coef = (X/(-anglearriver/lanceur.precision));
-        float total = base * coef /2; //jsp le 2
+        //on fait en sorte que tout l'écrant est utiliser pour afficher 
+        float coef = X/((anglearriver-angledepar)/(lanceur.precision));
+        float total = base * coef; //jsp le 2
         // printf("====\nvaleur base:%f\ncoef%f\ntotal %f\n",base,coef,total);
-        colone(total, normevecteur(rayon),lanceur.range);
-        placeSegment(rayon);
-        UwU_render(); 
-        UwU_wait(15);
+        if(normevecteur(rayon)<220){
+            exitcode = 1;
+        }
+        colone(total, normevecteur(rayon),lanceur.range,rayon.color);
+        // placeSegment(rayon);
+        // UwU_render(); 
+        // UwU_wait(5);
     }
+    return exitcode;
 }
 
 
 void benchmark(){
-    Segment test = {{rand()%600,rand()%600},{rand()%600,rand()%600}};
-    Segment test2 = {{rand()%600,rand()%600},{rand()%600,rand()%600}};
+    Segment test = {{rand()%Y,rand()%Y},{rand()%Y,rand()%Y}};
+    Segment test2 = {{rand()%Y,rand()%Y},{rand()%Y,rand()%Y}};
     if(intersect(test,test2).x != 0 && intersect(test,test2).y !=0){
         UwU_background(255,255,255);
         ptstest(intersect(test,test2),'v');
@@ -220,20 +253,41 @@ void benchmark(){
     UwU_render();
 }
 
+//on check pas la taille du tableaux de mur allor qu'il faut au minimum 4   ! 
+void initbordure(Segment *mureliste){
+        Segment monsegement ={ {0,0}, {X,0},'n'};
+        mureliste[0] = monsegement;
+        Segment monsegement1 ={ {0,0}, {0,Y},'n'};
+        mureliste[1] = monsegement1;
+        Segment monsegement2 ={ {X,0}, {X,Y},'n'};
+        mureliste[2] = monsegement2;
+        Segment monsegement3 ={ {0,Y}, {X,Y},'n'};
+        mureliste[3] = monsegement3;
+}
+
 void initrandomlisteobject(Segment *trairandom, int taille){
     for(int i=0; i<taille;i++){
-        Segment monsegement ={{rand()%800,rand()%600},{rand()%800,rand()%600},'b'};
+        Segment monsegement ={{rand()%X,rand()%Y},{rand()%X,rand()%Y},intocolorchar(rand()%3)};
         trairandom[i] = monsegement;
     }
+    initbordure(trairandom);
+}
+
+int validitermur(Point center,Segment *listemure,int nbmur){
+    Eye parametre = {center,360,0, sqrt(X*X+Y*Y), 0.1};
+    int value = scan(parametre,listemure,nbmur);
+    printf("retoure %d",value);
+    return value;
 }
 
 int main(void) {
-    static int nombreDeMure=5;
+    static int nombreDeMure=4+10;
 
     srand(time(NULL));
-    UwU_createWindow("Fenètre1", X, 600);
-    //calculler la base est rotation autre sens
-    Eye millieux = {{400,300},90,-90, 700, 0.01};
+    UwU_createWindow("Bime", X, Y);
+    //le faire bouger ces win
+    Point centre =  {X/2,Y/2};
+    Eye millieux = {centre,90,-90, sqrt(X*X+Y*Y), 0.0007};
     // printf("%d,%d",x,y);
     while(UwU_isRunning()) {
         UwU_background(255,255,255);
@@ -243,16 +297,22 @@ int main(void) {
         Segment trairandom[nombreDeMure];
         initrandomlisteobject(trairandom,nombreDeMure);
 
-
-        //on place une liste de segement pour l'affichage
-        placeListeSegment(trairandom,nombreDeMure);
-
-        scan(millieux,trairandom,nombreDeMure);
- 
-        
-        UwU_render();
-        UwU_wait(1000);
-        // scan(centre,test);
+        //si mes mure ne sont pas trop pres ou trop loin
+        if (validitermur(centre,trairandom,nombreDeMure)==0)
+        {
+            int angledepart = millieux.dirrection;
+            for(float rotation = 0; rotation < 270; rotation+=1){
+                UwU_background(255,255,255);
+                //on place une liste de segement pour l'affichage
+                // placeListeSegment(trairandom,nombreDeMure);
+                millieux.dirrection=angledepart + rotation;
+                int retour = scan(millieux,trairandom,nombreDeMure);
+                UwU_wait(10);
+                UwU_render();
+            }
+            printf("ouis");
+        }
+        else{printf("non");}
     }
     UwU_closeWindow();
 return 0;
